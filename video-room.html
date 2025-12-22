@@ -179,17 +179,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  const firebaseConfig = {
-  apiKey: "AIzaSyAyX_ZtqQI1779hgjDrQYwgpusGBGuSkNA",
-  authDomain: "poiskeloy.firebaseapp.com",
-  databaseURL: "https://poiskeloy-default-rtdb.firebaseio.com",
-  projectId: "poiskeloy",
-  storageBucket: "poiskeloy.appspot.com",
-  messagingSenderId: "7232327876242",
-  appId: "1:7232327876242:web:c619f1e32adf740d16f4b",
-  measurementId: "G-55QRM4W80"
-};
-
+   <script>
+        // TODO: paste YOUR Firebase config here
+        // You get this from Firebase console: Project settings -> General -> Your apps -> CDN
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -325,6 +326,7 @@
 
 </body>
 </html>
+
 
 
 
