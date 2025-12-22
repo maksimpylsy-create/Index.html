@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video Room — Poiskeloy</title>
+
+    <title>Poiskeloy — Tropical Search</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <style>
         body {
             margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding-top: 15px;
+            text-align: center;
             font-family: Arial, sans-serif;
             background-image: url('TropicalPic1.jpg');
             background-size: cover;
@@ -17,176 +18,84 @@
             background-attachment: fixed;
         }
 
-        .container {
+        .logo-container {
             display: flex;
-            gap: 40px;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
         }
 
-        .comments {
-            width: 300px;
-            max-height: 80vh;
-            overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        .logo {
+            max-width: 750px;
+            height: auto;
         }
 
-        .comments h2 {
-            margin-top: 0;
-            font-size: 20px;
+        .search-container {
+            display: flex;
+            justify-content: center;
         }
 
-        .admin-box,
-        .wipe-box {
-            margin-bottom: 15px;
+        .search-box {
+            width: 500px;
+            max-width: 90%;
+            padding: 14px 20px;
+            font-size: 16px;
+            border-radius: 30px;
+            border: 1px solid #dcdcdc;
+            outline: none;
         }
 
-        .admin-box input,
-        .wipe-box button {
-            width: 100%;
-            padding: 6px;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            border: 1px solid #bbb;
-        }
-
-        .admin-box button {
-            width: 100%;
-            padding: 6px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .wipe-box button {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .comment-box {
-            margin-bottom: 15px;
-        }
-
-        .comment-box input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        .comment-box button {
-            width: 100%;
-            padding: 8px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .comment {
-            background-color: #f1f1f1;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-        }
-
-        video {
-            width: 50%;
-            max-width: 600px;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        .search-box:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: transparent;
         }
     </style>
-</head>
-<body>
-
-    <div class="container">
-        <!-- Comment Section -->
-        <div class="comments">
-            <h2>Comments</h2>
-
-            <!-- Admin Login Box -->
-            <div class="admin-box">
-                <input type="password" id="adminCode" placeholder="Admin code">
-                <button onclick="enableAdmin()">Enter</button>
-            </div>
-
-            <!-- Wipe Comments Button -->
-            <div class="wipe-box">
-                <button onclick="wipeComments()">Wipe All Comments</button>
-            </div>
-
-            <div class="comment-box">
-                <input type="text" id="username" placeholder="Your name">
-                <input type="text" id="commentText" placeholder="Your comment">
-                <button onclick="addComment()">Post Comment</button>
-            </div>
-
-            <div id="commentList"></div>
-        </div>
-
-        <!-- Video Section -->
-        <video controls autoplay>
-            <source src="hussein.mp4.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
 
     <script>
-        let isAdmin = false;
-
-        function enableAdmin() {
-            const code = document.getElementById('adminCode').value.trim();
-            if (code === "Goon67") {
-                isAdmin = true;
-                alert("Admin mode enabled");
-            } else {
-                alert("Incorrect admin code");
+        function handleSearch(event) {
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query !== "") {
+                    window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(query);
+                }
             }
         }
-
-        function loadComments() {
-            const saved = localStorage.getItem('comments');
-            if (saved) {
-                document.getElementById('commentList').innerHTML = saved;
-            }
-        }
-
-        function addComment() {
-            const name = document.getElementById('username').value.trim();
-            const text = document.getElementById('commentText').value.trim();
-            if (name && text) {
-                const commentHTML = `<div class="comment"><strong>${name}</strong><br>${text}</div>`;
-                document.getElementById('commentList').innerHTML += commentHTML;
-                localStorage.setItem('comments', document.getElementById('commentList').innerHTML);
-                document.getElementById('username').value = '';
-                document.getElementById('commentText').value = '';
-            }
-        }
-
-        function wipeComments() {
-            if (confirm("Are you sure you want to delete all comments?")) {
-                localStorage.removeItem('comments');
-                document.getElementById('commentList').innerHTML = '';
-                alert("All comments wiped.");
-            }
-        }
-
-        window.onload = loadComments;
     </script>
+</head>
+
+<body>
+    <div class="logo-container">
+        <img src="PoiskeloyLogo2.png" class="logo">
+    </div>
+
+    <div class="search-container">
+        <input 
+            type="text" 
+            placeholder="Search..." 
+            class="search-box"
+            onkeydown="handleSearch(event)"
+        >
+    </div>
+
+    <div style="margin-top: 30px;">
+        <button 
+            onclick="window.location.href='video-room.html'" 
+            style="
+                background-color: #28a745;
+                color: white;
+                padding: 14px 28px;
+                font-size: 18px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+            ">
+            Click Me
+        </button>
+    </div>
 
 </body>
 </html>
+
+
 
 
