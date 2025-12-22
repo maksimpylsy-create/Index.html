@@ -22,17 +22,15 @@
             display: flex;
             gap: 40px;
             padding: 20px;
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            backdrop-filter: blur(4px);
         }
 
-        /* COMMENT SECTION */
         .comments {
             width: 300px;
             max-height: 80vh;
             overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 15px;
             border-radius: 12px;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
@@ -41,6 +39,10 @@
         .comments h2 {
             margin-top: 0;
             font-size: 20px;
+        }
+
+        .comment-box {
+            margin-bottom: 15px;
         }
 
         .comment-box input {
@@ -68,7 +70,6 @@
             border-radius: 6px;
         }
 
-        /* VIDEO */
         video {
             width: 50%;
             max-width: 600px;
@@ -80,68 +81,49 @@
 <body>
 
     <div class="container">
-
-        <!-- COMMENT SECTION -->
+        <!-- Comment Section -->
         <div class="comments">
             <h2>Comments</h2>
-
             <div class="comment-box">
                 <input type="text" id="username" placeholder="Your name">
                 <input type="text" id="commentText" placeholder="Your comment">
                 <button onclick="addComment()">Post Comment</button>
             </div>
-
             <div id="commentList"></div>
         </div>
 
-        <!-- VIDEO -->
+        <!-- Video Section -->
         <video controls autoplay>
             <source src="hussein.mp4.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
-
     </div>
 
     <script>
-        // Load saved comments when page opens
         function loadComments() {
-            const saved = localStorage.getItem('poiskeloy_comments');
+            const saved = localStorage.getItem('comments');
             if (saved) {
                 document.getElementById('commentList').innerHTML = saved;
             }
         }
 
-        // Add a new comment
         function addComment() {
             const name = document.getElementById('username').value.trim();
             const text = document.getElementById('commentText').value.trim();
-
             if (name && text) {
-                const commentHTML = `
-                    <div class="comment">
-                        <strong>${name}</strong><br>${text}
-                    </div>
-                `;
-
+                const commentHTML = `<div class="comment"><strong>${name}</strong><br>${text}</div>`;
                 document.getElementById('commentList').innerHTML += commentHTML;
-
-                // Save to localStorage
-                localStorage.setItem('poiskeloy_comments', document.getElementById('commentList').innerHTML);
-
-                // Clear inputs
+                localStorage.setItem('comments', document.getElementById('commentList').innerHTML);
                 document.getElementById('username').value = '';
                 document.getElementById('commentText').value = '';
             }
         }
 
-        // Load comments on page load
         window.onload = loadComments;
     </script>
 
 </body>
 </html>
-
-
 
 
 
