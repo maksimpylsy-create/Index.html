@@ -26,7 +26,7 @@
         }
 
         .comments {
-            width: 300px;
+            width: 320px;
             max-height: 80vh;
             overflow-y: auto;
             background-color: rgba(255, 255, 255, 0.8);
@@ -42,11 +42,10 @@
 
         .admin-box,
         .wipe-box {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
-        .admin-box input,
-        .wipe-box button {
+        .admin-box input {
             width: 100%;
             padding: 6px;
             margin-bottom: 6px;
@@ -65,6 +64,8 @@
         }
 
         .wipe-box button {
+            width: 100%;
+            padding: 6px;
             background-color: #dc3545;
             color: white;
             border: none;
@@ -96,9 +97,40 @@
 
         .comment {
             background-color: #f1f1f1;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
             border-radius: 6px;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .comment strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .comment-time {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            cursor: pointer;
+            display: none; /* shown only in admin mode */
+        }
+
+        .comment.admin-visible .delete-btn {
+            display: inline-block;
         }
 
         video {
@@ -122,7 +154,7 @@
                 <button onclick="enableAdmin()">Enter</button>
             </div>
 
-            <!-- Wipe Comments Button -->
+            <!-- Wipe Comments Button (admin only, but always visible) -->
             <div class="wipe-box">
                 <button onclick="wipeComments()">Wipe All Comments</button>
             </div>
@@ -143,7 +175,28 @@
         </video>
     </div>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <script>
+        // TODO: paste YOUR Firebase config here
+        // You get this from Firebase console: Project settings -> General -> Your apps -> CDN
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const commentsRef = db.ref("comments"); // all comments under /comments
+
         let isAdmin = false;
 
         function enableAdmin() {
@@ -151,43 +204,127 @@
             if (code === "Goon67") {
                 isAdmin = true;
                 alert("Admin mode enabled");
+                updateAdminVisibility();
             } else {
                 alert("Incorrect admin code");
             }
         }
 
-        function loadComments() {
-            const saved = localStorage.getItem('comments');
-            if (saved) {
-                document.getElementById('commentList').innerHTML = saved;
-            }
-        }
-
+        // Add a new comment to Firebase
         function addComment() {
-            const name = document.getElementById('username').value.trim();
-            const text = document.getElementById('commentText').value.trim();
-            if (name && text) {
-                const commentHTML = `<div class="comment"><strong>${name}</strong><br>${text}</div>`;
-                document.getElementById('commentList').innerHTML += commentHTML;
-                localStorage.setItem('comments', document.getElementById('commentList').innerHTML);
-                document.getElementById('username').value = '';
-                document.getElementById('commentText').value = '';
+            const nameInput = document.getElementById('username');
+            const textInput = document.getElementById('commentText');
+            const name = nameInput.value.trim();
+            const text = textInput.value.trim();
+
+            if (!name || !text) return;
+
+            const newComment = {
+                name: name,
+                text: text,
+                timestamp: Date.now()
+            };
+
+            commentsRef.push(newComment);
+
+            nameInput.value = "";
+            textInput.value = "";
+        }
+
+        // Render a comment in the DOM
+        function renderComment(key, data) {
+            const commentList = document.getElementById('commentList');
+
+            let commentDiv = document.getElementById("comment-" + key);
+            if (!commentDiv) {
+                commentDiv = document.createElement('div');
+                commentDiv.id = "comment-" + key;
+                commentDiv.className = "comment";
+                commentList.appendChild(commentDiv);
+            }
+
+            const date = new Date(data.timestamp || Date.now());
+            const timeString = date.toLocaleString();
+
+            commentDiv.innerHTML = `
+                <strong>${escapeHtml(data.name || "Anonymous")}</strong>
+                <span>${escapeHtml(data.text || "")}</span>
+                <div class="comment-time">${timeString}</div>
+                <button class="delete-btn" onclick="deleteComment('${key}')">Delete</button>
+            `;
+
+            if (isAdmin) {
+                commentDiv.classList.add("admin-visible");
+            } else {
+                commentDiv.classList.remove("admin-visible");
             }
         }
 
+        // Delete a single comment (admin only)
+        function deleteComment(key) {
+            if (!isAdmin) {
+                alert("Admin mode required to delete comments.");
+                return;
+            }
+            if (confirm("Delete this comment?")) {
+                commentsRef.child(key).remove();
+            }
+        }
+
+        // Wipe all comments (admin only)
         function wipeComments() {
-            if (confirm("Are you sure you want to delete all comments?")) {
-                localStorage.removeItem('comments');
-                document.getElementById('commentList').innerHTML = '';
-                alert("All comments wiped.");
+            if (!isAdmin) {
+                alert("Admin mode required to wipe all comments.");
+                return;
+            }
+            if (confirm("Are you sure you want to delete ALL comments?")) {
+                commentsRef.remove();
             }
         }
 
-        window.onload = loadComments;
+        // Listen for comments in realtime
+        commentsRef.on("child_added", snapshot => {
+            const key = snapshot.key;
+            const data = snapshot.val();
+            renderComment(key, data);
+        });
+
+        commentsRef.on("child_changed", snapshot => {
+            const key = snapshot.key;
+            const data = snapshot.val();
+            renderComment(key, data);
+        });
+
+        commentsRef.on("child_removed", snapshot => {
+            const key = snapshot.key;
+            const el = document.getElementById("comment-" + key);
+            if (el) el.remove();
+        });
+
+        // When admin mode toggles, update delete button visibility
+        function updateAdminVisibility() {
+            const comments = document.querySelectorAll(".comment");
+            comments.forEach(comment => {
+                if (isAdmin) {
+                    comment.classList.add("admin-visible");
+                } else {
+                    comment.classList.remove("admin-visible");
+                }
+            });
+        }
+
+        // Simple HTML escape to avoid issues
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
     </script>
 
 </body>
 </html>
-
 
 
