@@ -91,6 +91,21 @@ video {
     width: 350px;
     border-radius: 12px;
 }
+
+/* 👁️ GLAZI */
+.glaazi {
+    position: fixed;
+    width: 120px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.3s ease;
+    z-index: 999;
+}
+
+.glaazi.visible {
+    opacity: 0.6;
+    transform: scale(1.05);
+}
 </style>
 </head>
 
@@ -115,13 +130,17 @@ video {
 <div id="commentList"></div>
 </div>
 
-<!-- ✅ FIXED VIDEO NAME -->
+<!-- VIDEO -->
 <video controls autoplay muted loop>
     <source src="WhiteDogLickScreen.mp4" type="video/mp4">
 </video>
 
 </div>
 
+<!-- 👁️ GLAZI IMAGE -->
+<img src="Glaazi.png" id="glaazi" class="glaazi">
+
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -260,6 +279,22 @@ function deleteReply(cid, rid) {
 }
 
 commentsRef.on("child_added", s => renderComment(s.key, s.val()));
+
+/* 👁️ GLAZI CLICK EFFECT */
+const glaazi = document.getElementById("glaazi");
+let glaaziVisible = false;
+
+document.addEventListener("click", (e) => {
+    glaaziVisible = !glaaziVisible;
+
+    if (glaaziVisible) {
+        glaazi.classList.add("visible");
+        glaazi.style.left = (e.clientX - 60) + "px";
+        glaazi.style.top = (e.clientY - 60) + "px";
+    } else {
+        glaazi.classList.remove("visible");
+    }
+});
 </script>
 
 </body>
