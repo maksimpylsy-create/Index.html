@@ -1,14 +1,95 @@
-<script>
-try {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Video Room</title>
 
+<style>
+body {
+    font-family: Arial;
+    background: #222;
+    color: white;
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    gap: 40px;
+}
+
+.comments {
+    width: 350px;
+    background: white;
+    color: black;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.comment {
+    background: #f1f1f1;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+}
+
+.reply {
+    background: #ddd;
+    margin-top: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.reply-btn {
+    font-size: 12px;
+    color: blue;
+    cursor: pointer;
+}
+
+.toggle {
+    font-size: 12px;
+    color: #555;
+    cursor: pointer;
+}
+
+.delete-btn {
+    font-size: 10px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="comments">
+
+<h2>Comments</h2>
+
+<input id="adminCode" placeholder="admin code">
+<button onclick="enableAdmin()">Enter</button>
+
+<br><br>
+
+<input id="username" placeholder="name">
+<input id="commentText" placeholder="comment">
+<button onclick="addComment()">Post</button>
+
+<div id="commentList"></div>
+
+</div>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
 const firebaseConfig = {
     apiKey: "AIzaSyAyX_ZtqQI1779hgjDrQYwgpusGBGuSkNA",
-    authDomain: "poiskeloy.firebaseapp.com",
-    databaseURL: "https://poiskeloy-default-rtdb.firebaseio.com",
-    projectId: "poiskeloy",
-    storageBucket: "poiskeloy.appspot.com",
-    messagingSenderId: "7232327876242",
-    appId: "1:7232327876242:web:c619f1e32adf740d16f4b"
+    databaseURL: "https://poiskeloy-default-rtdb.firebaseio.com"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -19,90 +100,153 @@ const repliesRef = db.ref("replies");
 
 let isAdmin = false;
 
+// ADMIN
 function enableAdmin() {
-    if (document.getElementById('adminCode').value === "Goon67") {
+    if (adminCode.value === "Goon67") {
         isAdmin = true;
         alert("Admin enabled");
     }
 }
 
+// ADD COMMENT
 function addComment() {
     const name = username.value.trim();
     const text = commentText.value.trim();
     if (!name || !text) return;
 
-    commentsRef.push({ name, text, timestamp: Date.now() });
+    commentsRef.push({
+        name,
+        text,
+        timestamp: Date.now()
+    });
 
     username.value = "";
     commentText.value = "";
 }
 
+// RENDER COMMENT
 function renderComment(key, data) {
-    const list = document.getElementById('commentList');
+    const list = document.getElementById("commentList");
 
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.className = "comment";
 
     div.innerHTML = `
         <strong>${data.name}</strong>
         <div>${data.text}</div>
-        <div>${new Date(data.timestamp).toLocaleString()}</div>
+        <div style="font-size:11px">${new Date(data.timestamp).toLocaleString()}</div>
 
-        <div style="font-size:12px;color:blue;cursor:pointer" onclick="showReply('${key}')">Reply</div>
+        <div class="reply-btn" onclick="showReply('${key}')">Reply</div>
 
-        <div id="reply-${key}"></div>
+        <div id="replyBox-${key}"></div>
         <div id="replies-${key}"></div>
+
+        <div id="toggle-${key}" class="toggle"></div>
+
+        <button class="delete-btn" onclick="deleteComment('${key}')">Delete</button>
     `;
 
-    list.appendChild(div);
+    list.prepend(div);
 
     loadReplies(key);
 }
 
+// SHOW REPLY INPUT
 function showReply(id) {
-    document.getElementById("reply-"+id).innerHTML = `
+    const box = document.getElementById("replyBox-" + id);
+    box.innerHTML = `
         <input id="rn-${id}" placeholder="name">
         <input id="rt-${id}" placeholder="reply">
-        <button onclick="addReply('${id}')">send</button>
+        <button onclick="addReply('${id}')">Send</button>
     `;
 }
 
+// ADD REPLY
 function addReply(id) {
-    const name = document.getElementById(`rn-${id}`).value;
-    const text = document.getElementById(`rt-${id}`).value;
+    const name = document.getElementById("rn-" + id).value.trim();
+    const text = document.getElementById("rt-" + id).value.trim();
+
+    if (!name || !text) return;
 
     repliesRef.child(id).push({
-        name, text, timestamp: Date.now()
+        name,
+        text,
+        timestamp: Date.now()
     });
+
+    document.getElementById("replyBox-" + id).innerHTML = "";
 }
 
+// LOAD REPLIES
 function loadReplies(id) {
     repliesRef.child(id).on("value", snap => {
-        const box = document.getElementById("replies-"+id);
-        box.innerHTML = "";
+        const container = document.getElementById("replies-" + id);
+        const toggle = document.getElementById("toggle-" + id);
 
-        let count = 0;
+        container.innerHTML = "";
 
-        snap.forEach(s => {
-            count++;
+        const replies = [];
+        snap.forEach(s => replies.push({key:s.key,...s.val()}));
 
-            const d = s.val();
-
+        replies.forEach((r,i) => {
             const el = document.createElement("div");
-            el.innerHTML = `<b>${d.name}</b>: ${d.text}`;
+            el.className = "reply";
 
-            if (count > 2) el.style.display = "none";
+            el.innerHTML = `
+                <strong>${r.name}</strong>
+                <div>${r.text}</div>
+                <div style="font-size:10px">${new Date(r.timestamp).toLocaleString()}</div>
+                <button class="delete-btn" onclick="deleteReply('${id}','${r.key}')">Delete</button>
+            `;
 
-            box.appendChild(el);
+            if (replies.length > 2 && i >= 2) {
+                el.style.display = "none";
+            }
+
+            container.appendChild(el);
         });
+
+        if (replies.length > 2) {
+            toggle.innerText = "Show replies";
+            toggle.onclick = () => toggleReplies(id);
+        } else {
+            toggle.innerText = "";
+        }
     });
 }
 
-commentsRef.on("child_added", s => renderComment(s.key, s.val()));
+// TOGGLE
+function toggleReplies(id) {
+    const items = document.querySelectorAll(`#replies-${id} .reply`);
+    const hidden = items[2].style.display === "none";
 
-} catch (e) {
-    document.body.innerHTML = "<h1 style='color:red'>ERROR: " + e.message + "</h1>";
+    items.forEach((el,i)=>{
+        if (i >= 2) {
+            el.style.display = hidden ? "block" : "none";
+        }
+    });
+
+    document.getElementById("toggle-" + id).innerText =
+        hidden ? "Hide replies" : "Show replies";
 }
+
+// DELETE COMMENT
+function deleteComment(id) {
+    if (!isAdmin) return alert("Admin only");
+    commentsRef.child(id).remove();
+}
+
+// DELETE REPLY
+function deleteReply(cid, rid) {
+    if (!isAdmin) return alert("Admin only");
+    repliesRef.child(cid).child(rid).remove();
+}
+
+// LISTEN
+commentsRef.on("child_added", s => renderComment(s.key, s.val()));
 </script>
+
+</body>
+</html>
 
 
