@@ -1,348 +1,188 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Video Room — Poiskeloy</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            background-image: url('TropicalPic1.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAyX_ZtqQI1779hgjDrQYwgpusGBGuSkNA",
+    authDomain: "poiskeloy.firebaseapp.com",
+    databaseURL: "https://poiskeloy-default-rtdb.firebaseio.com",
+    projectId: "poiskeloy",
+    storageBucket: "poiskeloy.appspot.com",
+    messagingSenderId: "7232327876242",
+    appId: "1:7232327876242:web:c619f1e32adf740d16f4b"
+};
 
-        /* --- NEW BUTTON STYLE --- */
-        .restaurant-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+firebase.initializeApp(firebaseConfig);
 
-            background-color: #3cb371;
-            color: white;
+const db = firebase.database();
+const commentsRef = db.ref("comments");
+const repliesRef = db.ref("replies");
 
-            padding: 14px 20px;
-            border-radius: 8px; /* square-ish */
-            font-size: 18px;
-            font-weight: 600;
+let isAdmin = false;
 
-            text-decoration: none;
-            cursor: pointer;
-            transition: 0.2s ease;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        }
+// ADMIN
+function enableAdmin() {
+    const code = document.getElementById('adminCode').value.trim();
+    if (code === "Goon67") {
+        isAdmin = true;
+        alert("Admin enabled");
+    } else {
+        alert("Wrong code");
+    }
+}
 
-        .restaurant-btn:hover {
-            background-color: #2e8b57;
-            transform: scale(1.03);
-        }
-        /* ------------------------ */
+// ADD COMMENT
+function addComment() {
+    const name = document.getElementById('username').value.trim();
+    const text = document.getElementById('commentText').value.trim();
+    if (!name || !text) return;
 
-        .container {
-            display: flex;
-            gap: 40px;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-        }
+    commentsRef.push({
+        name,
+        text,
+        timestamp: Date.now()
+    });
 
-        .comments {
-            width: 320px;
-            max-height: 80vh;
-            overflow-y: auto;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        }
+    document.getElementById('username').value = "";
+    document.getElementById('commentText').value = "";
+}
 
-        .comments h2 {
-            margin-top: 0;
-            font-size: 20px;
-        }
+// RENDER COMMENT
+function renderComment(key, data) {
+    const list = document.getElementById('commentList');
 
-        .admin-box,
-        .wipe-box {
-            margin-bottom: 10px;
-        }
+    let div = document.getElementById("c-" + key);
+    if (!div) {
+        div = document.createElement('div');
+        div.id = "c-" + key;
+        div.className = "comment";
+        list.appendChild(div);
+    }
 
-        .admin-box input {
-            width: 100%;
-            padding: 6px;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            border: 1px solid #bbb;
-        }
+    div.innerHTML = `
+        <strong>${escapeHtml(data.name)}</strong>
+        <div>${escapeHtml(data.text)}</div>
+        <div class="comment-time">${new Date(data.timestamp).toLocaleString()}</div>
 
-        .admin-box button {
-            width: 100%;
-            padding: 6px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+        <div style="font-size:12px;color:#007bff;cursor:pointer" onclick="showReply('${key}')">Reply</div>
 
-        .wipe-box button {
-            width: 100%;
-            padding: 6px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+        <div id="replyBox-${key}" style="display:none"></div>
+        <div id="replies-${key}" style="margin-left:10px;border-left:2px solid #ddd;padding-left:6px"></div>
 
-        .comment-box {
-            margin-bottom: 15px;
-        }
-
-        .comment-box input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        .comment-box button {
-            width: 100%;
-            padding: 8px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .comment {
-            background-color: #f1f1f1;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            position: relative;
-        }
-
-        .comment strong {
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        .comment-time {
-            font-size: 11px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background-color: #ff6b6b;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 11px;
-            cursor: pointer;
-            display: none;
-        }
-
-        .comment.admin-visible .delete-btn {
-            display: inline-block;
-        }
-
-        video {
-            width: 50%;
-            max-width: 600px;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.4);
-        }
-    </style>
-</head>
-<body>
-
-    <!-- NEW BUTTON -->
-    <a href="CrippsyCok.html" class="restaurant-btn">Take me to the Restaurant</a>
-
-    <div class="container">
-        <div class="comments">
-            <h2>Comments</h2>
-
-            <div class="admin-box">
-                <input type="password" id="adminCode" placeholder="Admin code">
-                <button onclick="enableAdmin()">Enter</button>
-            </div>
-
-            <div class="wipe-box">
-                <button onclick="wipeComments()">Wipe All Comments</button>
-            </div>
-
-            <div class="comment-box">
-                <input type="text" id="username" placeholder="Your name">
-                <input type="text" id="commentText" placeholder="Your comment">
-                <button onclick="addComment()">Post Comment</button>
-            </div>
-
-            <div id="commentList"></div>
+        <div id="toggle-${key}" style="font-size:12px;cursor:pointer;color:#555;display:none" onclick="toggleReplies('${key}')">
+            Show replies
         </div>
 
-        <video controls autoplay>
-            <source src="WhiteDogLickScreen.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
+        <button class="delete-btn" onclick="deleteComment('${key}')">Delete</button>
+    `;
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    loadReplies(key);
+}
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAyX_ZtqQI1779hgjDrQYwgpusGBGuSkNA",
-            authDomain: "poiskeloy.firebaseapp.com",
-            databaseURL: "https://poiskeloy-default-rtdb.firebaseio.com",
-            projectId: "poiskeloy",
-            storageBucket: "poiskeloy.appspot.com",
-            messagingSenderId: "7232327876242",
-            appId: "1:7232327876242:web:c619f1e32adf740d16f4b",
-            measurementId: "G-55QRM4W80"
-        };
+// SHOW REPLY INPUT
+function showReply(id) {
+    const box = document.getElementById("replyBox-" + id);
+    box.style.display = "block";
+    box.innerHTML = `
+        <input placeholder="Name" id="rname-${id}">
+        <input placeholder="Reply" id="rtext-${id}">
+        <button onclick="addReply('${id}')">Reply</button>
+    `;
+}
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const commentsRef = db.ref("comments");
+// ADD REPLY
+function addReply(id) {
+    const name = document.getElementById(`rname-${id}`).value.trim();
+    const text = document.getElementById(`rtext-${id}`).value.trim();
+    if (!name || !text) return;
 
-        let isAdmin = false;
+    repliesRef.child(id).push({
+        name,
+        text,
+        timestamp: Date.now()
+    });
 
-        function enableAdmin() {
-            const code = document.getElementById('adminCode').value.trim();
-            if (code === "Goon67") {
-                isAdmin = true;
-                alert("Admin mode enabled");
-                updateAdminVisibility();
-            } else {
-                alert("Incorrect admin code");
-            }
-        }
+    document.getElementById("replyBox-" + id).innerHTML = "";
+}
 
-        function addComment() {
-            const nameInput = document.getElementById('username');
-            const textInput = document.getElementById('commentText');
-            const name = nameInput.value.trim();
-            const text = textInput.value.trim();
+// LOAD REPLIES
+function loadReplies(id) {
+    const container = document.getElementById("replies-" + id);
+    const toggle = document.getElementById("toggle-" + id);
 
-            if (!name || !text) return;
+    repliesRef.child(id).on("value", snap => {
+        container.innerHTML = "";
 
-            const newComment = {
-                name: name,
-                text: text,
-                timestamp: Date.now()
-            };
+        const replies = [];
+        snap.forEach(s => replies.push({key:s.key,...s.val()}));
 
-            commentsRef.push(newComment);
+        replies.forEach((r,i) => {
+            const el = document.createElement("div");
+            el.style.background="#eee";
+            el.style.marginTop="5px";
+            el.style.padding="5px";
+            el.style.borderRadius="5px";
 
-            nameInput.value = "";
-            textInput.value = "";
-        }
-
-        function renderComment(key, data) {
-            const commentList = document.getElementById('commentList');
-
-            let commentDiv = document.getElementById("comment-" + key);
-            if (!commentDiv) {
-                commentDiv = document.createElement('div');
-                commentDiv.id = "comment-" + key;
-                commentDiv.className = "comment";
-                commentList.appendChild(commentDiv);
-            }
-
-            const date = new Date(data.timestamp || Date.now());
-            const timeString = date.toLocaleString();
-
-            commentDiv.innerHTML = `
-                <strong>${escapeHtml(data.name || "Anonymous")}</strong>
-                <span>${escapeHtml(data.text || "")}</span>
-                <div class="comment-time">${timeString}</div>
-                <button class="delete-btn" onclick="deleteComment('${key}')">Delete</button>
+            el.innerHTML = `
+                <strong>${escapeHtml(r.name)}</strong>
+                <div>${escapeHtml(r.text)}</div>
+                <div style="font-size:11px">${new Date(r.timestamp).toLocaleString()}</div>
+                <button class="delete-btn" onclick="deleteReply('${id}','${r.key}')">Delete</button>
             `;
 
-            if (isAdmin) {
-                commentDiv.classList.add("admin-visible");
-            } else {
-                commentDiv.classList.remove("admin-visible");
+            if (replies.length > 2 && i >= 2) {
+                el.style.display = "none";
             }
-        }
 
-        function deleteComment(key) {
-            if (!isAdmin) {
-                alert("Admin mode required to delete comments.");
-                return;
-            }
-            if (confirm("Delete this comment?")) {
-                commentsRef.child(key).remove();
-            }
-        }
-
-        function wipeComments() {
-            if (!isAdmin) {
-                alert("Admin mode required to wipe all comments.");
-                return;
-            }
-            if (confirm("Are you sure you want to delete ALL comments?")) {
-                commentsRef.remove();
-            }
-        }
-
-        commentsRef.on("child_added", snapshot => {
-            const key = snapshot.key;
-            const data = snapshot.val();
-            renderComment(key, data);
+            container.appendChild(el);
         });
 
-        commentsRef.on("child_changed", snapshot => {
-            const key = snapshot.key;
-            const data = snapshot.val();
-            renderComment(key, data);
-        });
+        toggle.style.display = replies.length > 2 ? "block" : "none";
+    });
+}
 
-        commentsRef.on("child_removed", snapshot => {
-            const key = snapshot.key;
-            const el = document.getElementById("comment-" + key);
-            if (el) el.remove();
-        });
+// TOGGLE
+function toggleReplies(id) {
+    const items = document.querySelectorAll(`#replies-${id} div`);
+    const hidden = items[2]?.style.display === "none";
 
-        function updateAdminVisibility() {
-            const comments = document.querySelectorAll(".comment");
-            comments.forEach(comment => {
-                if (isAdmin) {
-                    comment.classList.add("admin-visible");
-                } else {
-                    comment.classList.remove("admin-visible");
-                }
-            });
-        }
+    items.forEach((el,i)=>{
+        if (i>=2) el.style.display = hidden ? "block" : "none";
+    });
 
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-        
-    </script>
+    document.getElementById(`toggle-${id}`).innerText =
+        hidden ? "Hide replies" : "Show replies";
+}
 
-</body>
-</html>
+// DELETE COMMENT
+function deleteComment(key) {
+    if (!isAdmin) return alert("Admin only");
+    if (confirm("Delete comment?")) {
+        commentsRef.child(key).remove();
+    }
+}
 
+// DELETE REPLY
+function deleteReply(cid, rid) {
+    if (!isAdmin) return alert("Admin only");
+    if (confirm("Delete reply?")) {
+        repliesRef.child(cid).child(rid).remove();
+    }
+}
+
+// FIREBASE LISTENERS
+commentsRef.on("child_added", s => renderComment(s.key, s.val()));
+commentsRef.on("child_changed", s => renderComment(s.key, s.val()));
+commentsRef.on("child_removed", s => {
+    const el = document.getElementById("c-" + s.key);
+    if (el) el.remove();
+});
+
+// SAFE HTML
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+</script>
 
 
 
