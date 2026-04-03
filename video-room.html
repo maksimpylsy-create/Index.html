@@ -92,19 +92,14 @@ video {
     border-radius: 12px;
 }
 
-/* 👁️ GLAZI */
+/* GLAAZI */
 .glaazi {
     position: fixed;
-    width: 120px;
+    width: 85px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.4s ease, transform 0.3s ease;
+    transition: opacity 0.2s ease;
     z-index: 999;
-}
-
-.glaazi.visible {
-    opacity: 0.6;
-    transform: scale(1.05);
 }
 </style>
 </head>
@@ -137,7 +132,7 @@ video {
 
 </div>
 
-<!-- 👁️ EXACT NAME USED -->
+<!-- EXACT NAME USED -->
 <img src="Glaazi.png" id="glaazi" class="glaazi">
 
 <!-- FIREBASE -->
@@ -280,20 +275,20 @@ function deleteReply(cid, rid) {
 
 commentsRef.on("child_added", s => renderComment(s.key, s.val()));
 
-/* 👁️ GLAZI EFFECT */
+/* GLAAZI EFFECT */
 const glaazi = document.getElementById("glaazi");
-let glaaziVisible = false;
+let glaaziTimeout;
 
 document.addEventListener("click", (e) => {
-    glaaziVisible = !glaaziVisible;
+    glaazi.style.left = e.clientX + "px";
+    glaazi.style.top = e.clientY + "px";
+    glaazi.style.transform = "translate(-50%, -50%)";
+    glaazi.style.opacity = "0.75";
 
-    if (glaaziVisible) {
-        glaazi.classList.add("visible");
-        glaazi.style.left = (e.clientX - 60) + "px";
-        glaazi.style.top = (e.clientY - 60) + "px";
-    } else {
-        glaazi.classList.remove("visible");
-    }
+    clearTimeout(glaaziTimeout);
+    glaaziTimeout = setTimeout(() => {
+        glaazi.style.opacity = "0";
+    }, 3000);
 });
 </script>
 
